@@ -1,7 +1,10 @@
 pragma solidity ^0.5.0;
 
-
-
+address[] public owners;
+uint public required;
+mapping(address => bool) public isOwner;
+uint public transactionCount; 
+mapping (uint => Transaction) public transactions; 
 
 contract MultiSignatureWallet {
 
@@ -41,15 +44,29 @@ contract MultiSignatureWallet {
     }
     
     constructor(address[] memory _owners, uint _required) 
+      event Submission(uint indexed transactionId);
+
       public 
-      validRequirement(_owners.length, _required) {}
+      validRequirement(_owners.length, _required) {
+        for (uint i=0; i<_owners.length; i++) {
+          isOwner[_owners[i]] = true; 
+        }
+        owners = _owners;
+        required = _required; 
+      }
 
     /// @dev Allows an owner to submit and confirm a transaction.
     /// @param destination Transaction target address.
     /// @param value Transaction ether value.
     /// @param data Transaction data payload.
     /// @return Returns transaction ID.
-    function submitTransaction(address destination, uint value, bytes memory data) public returns (uint transactionId) {}
+    function submitTransaction(address destination, uint value, bytes memory data) 
+      public 
+      returns (uint transactionId) {
+        require(isOwner[msg.sender]);
+        transactionId = addTransaction(destination, value, data);
+        confirmTransaction(transactionId);
+      }
 
     /// @dev Allows an owner to confirm a transaction.
     /// @param transactionId Transaction ID.
@@ -76,5 +93,17 @@ contract MultiSignatureWallet {
     /// @param value Transaction ether value.
     /// @param data Transaction data payload.
     /// @return Returns transaction ID.
-    function addTransaction(address destination, uint value, bytes memory data) internal returns (uint transactionId) {}
+    function addTransaction(address destination, uint value, bytes memory data) 
+      internal 
+      returns (uint transactionId) {
+        transactionId = transactionCount;
+        transactions[transactionId] = Transaction({
+          destination: destination,
+          value: value,
+          data: data, 
+          executed: false
+        });
+        transactionCount += 1;
+        emit Submission(transactionId);
+      }
 }
