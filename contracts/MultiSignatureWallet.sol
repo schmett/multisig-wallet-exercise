@@ -1,5 +1,8 @@
 pragma solidity ^0.5.0;
 
+
+
+
 contract MultiSignatureWallet {
 
     struct Transaction {
@@ -27,7 +30,19 @@ contract MultiSignatureWallet {
     /// @dev Contract constructor sets initial owners and required number of confirmations.
     /// @param _owners List of initial owners.
     /// @param _required Number of required confirmations.
-    constructor(address[] memory _owners, uint _required) public {}
+    
+    // make sure that a user does not require more confirmations than there are owners
+    // the contract requires at least one confirmation before sending a transaction
+    // the owner array contains at least one address
+    modifier validRequirement(uint ownerCount, uint _required) {
+      if (_required > ownerCount || _required == 0 || ownerCount == 0)
+        revert(); 
+      _;       
+    }
+    
+    constructor(address[] memory _owners, uint _required) 
+      public 
+      validRequirement(_owners.length, _required) {}
 
     /// @dev Allows an owner to submit and confirm a transaction.
     /// @param destination Transaction target address.
